@@ -1,0 +1,40 @@
+{
+  "name": "Advert Feedback Toggle",
+  "version": "1.0",
+  "manifest_version": 3,
+  "description": "Advert Feedback Toggle by Fikret Hassan",
+  "homepage_url": "https://github.com/FikretHassan",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
+  "icons": {
+    "16": "images/icon16.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Advert Feedback Toggle by Fikret Hassan"
+  },
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "storage",
+    "scripting",
+    "webRequest",
+    "contextMenus"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "web_accessible_resources": [
+    {
+      "resources": ["adtech.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
