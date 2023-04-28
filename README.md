@@ -44,6 +44,7 @@ adtech.js is what is executed when you turn the toggle on. As is, it does the fo
 - Keeps track of 'old' data in refreshing adunits by storing them in the format 'adentify.results.slots.queryId'
 - Creates a modal if a user interacts with the 'Ad Feedback button', and awaits user input for the three fields 'Name', 'email' and 'Complaint'
 - Sends the data to a slack channel via a webhook URL (currently left blank in adtech.js, simply replace with your webhook URL)
+- Includes very basic exclusion functionality to turn the injection feature off, under 'exclusionAdvertiserIds' within adtech.js
 
 
 **Slack Webhook Creation**
@@ -54,3 +55,56 @@ The way in which we do this is as follows:
 
 - Create your slack channel
 - Go to the 'My Apps' page on your slacks workspace account: https://api.slack.com/apps and click 'Create New App'
+- Create from scratch, and fill your details in:
+
+![image](https://user-images.githubusercontent.com/17550385/235267900-54edca90-15de-46b1-818a-95d9a06ccee6.png)
+  
+
+- Back in Slack, open your slack channel, click the name and 'integrations' in the modal that appears, and then 'Add an app':
+
+![image](https://user-images.githubusercontent.com/17550385/235268072-d67d75ff-c4eb-47b8-bf0e-1b062c0a7183.png)
+
+- Back in the api slack page, go into your app and then go to 'Incoming Webhooks':
+
+![image](https://user-images.githubusercontent.com/17550385/235268190-b3d54787-3f71-4823-8049-079a458f4eaa.png)
+
+- Here you can add your new webhook, choosing the channel you added your app to earlier on
+- You can now copy this webhook URL, and replace '<SLACK WEBHOOK URL HERE>' in adtech.js with your URL
+- You should now be good to go!
+
+**Testing**
+
+- Enable the extension and refresh the page once enabled
+- You should begin to see 'Ad Feedback' under your adverts (so long as there is room for this to be injected, some cropping may occur on tightly placed adverts in which case you may need to configure the injection method in the 'adentifyDynamicAds' function):
+
+![image](https://user-images.githubusercontent.com/17550385/235268448-f7db210a-41f6-44fb-a002-1ca1cc3a6b82.png)
+
+- You can now interact with these buttons to open up a modal, which allows you to input your name, email and complaint:
+
+![image](https://user-images.githubusercontent.com/17550385/235268515-c4169247-9f2c-4609-b48f-16f7f2025978.png)
+
+- You can then send the report directly to your Slack channel!
+
+![image](https://user-images.githubusercontent.com/17550385/235268555-4b826fe5-0bc0-42a6-9bf7-9f94d3dcb3cc.png)
+
+
+
+
+
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
