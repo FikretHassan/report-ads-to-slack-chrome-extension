@@ -1,4 +1,6 @@
 # Report Ads to Slack via Chrome Extension
+**Credit: Sean Dillon: https://github.com/adentify/, getAdData.js gist by rdillmanCN: https://gist.github.com/rdillmanCN/**
+
 Chrome Extension tool to enable Advert Feedback buttons for your Google Publisher Tag adverts. Useful internal tool for non technical stakeholders and employees to send technical information about a problematic advert to a Slack channel of your choice.
 
 Simply add a slack App to your Slack Channel of choice, and update adtech.js to use that channels webhook URL (replacing <SLACK WEBHOOK URL HERE> with your URL) and you are good to go.
@@ -89,7 +91,14 @@ The way in which we do this is as follows:
 
 
 
+You are now ready to modify the extension to your hearts content! Some notes showever:
 
+- If you are going to submit your version to the extension store, rework the function that sends the data to send to a backend first, then you can safely use the webhook there without your users being able to see that URL
+- You modify manifest.json and background.js to restrict the URLs the extension can run on
+- There may be bugs, theres a couple I know about that I am intending to fix but this is more of a starting point than a finished product (if such a thing exists)
+- I do not currently inject the feedback button, or collect data for any video elements that arent google publisher tag (such as IMA SDK ads)
+- There is no Amazon TAM/UAM data collection, feel free to add it if you work with them!
+- I've had to break the 'Ad Information Results' data up into chunks as sometimes the data is too big to send as one message
 
 
   
