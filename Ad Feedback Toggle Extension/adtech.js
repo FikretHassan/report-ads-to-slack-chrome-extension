@@ -486,11 +486,11 @@ if (document.readyState !== 'complete') {
     // Wait for the page to finish loading
     document.onreadystatechange = function() {
         if (document.readyState === 'complete') {
-            // Page has finished loading, so fire the CMP function
+            // Page has finished loading, so fire the function
             tmgLoadAdentify();
         }
     };
 } else {
-    // Page has already finished loading, so just fire the CMP function
+    // Page has already finished loading, so just fire the function
     tmgLoadAdentify();
 }
