@@ -13,7 +13,7 @@ To locally install the Chrome Extension, simply:
 - Navigate to chrome://extensions/ 
 - Enable Developer Mode (top right)
 - Load unpacked (top left)
-- Navigate to the 'Ad Feedback Toggle Extension' you have downloaded
+- Navigate to the 'Ad Feedback Toggle Extension' folder you have downloaded
 
 This should now have installed and enabled your extension!
 
