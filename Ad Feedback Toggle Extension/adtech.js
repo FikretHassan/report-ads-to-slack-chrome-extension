@@ -277,7 +277,8 @@ function tmgLoadAdentify() {
             result.outOfPage = data && !!data.outOfPage;
             result.sourceAgnosticCreativeId = data && data.sourceAgnosticCreativeId || "";
             result.sourceAgnosticLineItemId = data && data.sourceAgnosticLineItemId || "";
-            result.DFP = data && data.creativeId && "https://www.google.com/dfp/" + googletag.pubads().getSlots()[0].getAdUnitPath().split('/')[1] + "#delivery/CreativeDetail/creativeId=" + data.creativeId || "";
+            result.DFP = data && data.creativeId && "https://www.google.com/dfp/" + googletag.pubads().getSlots()[0].getAdUnitPath().match(/\/?(.*?)\//)[1] + "#delivery/CreativeDetail/creativeId=" + data.creativeId || "";
+            // added a regexp to grab the GAM account ID better. Before we were expecting the format to be /GAM-ID/, but notice some sites use GAM-ID/ - this works on both
             // Get ad sizes for the slot
             slot.getSizes().forEach(function(size) {
                 result.sizes.push(typeof size === 'object' ? size.getWidth() + "x" + size.getHeight() : size);
