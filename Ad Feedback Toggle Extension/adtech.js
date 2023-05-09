@@ -3,8 +3,8 @@ function tmgLoadAdentify() {
     window.top.googletag.cmd.push(function() {
         window.top.adentify = window.top.adentify || {};
         window.top.adentify.about = { // deatils about this version of the code
-            version: '0.1',
-            date: '05-04-2023',
+            version: '0.11',
+            date: '09-05-2023',
             company: 'Telegraph Media Group',
             author: 'Fikret Hassan - fikret@telegraph.co.uk & Sean Dillon - sean@telegraph.co.uk',
             credit: 'Sean Dillon: https://github.com/adentify/, getAdData.js gist by rdillmanCN: https://gist.github.com/rdillmanCN/'
@@ -330,7 +330,7 @@ function tmgLoadAdentify() {
             //console.info('ADTECH adentify.js: The div clicked on had ID: ' + this.parentNode.id);
 
             let latestFormData = null; // store the latest form data
-
+            window.top.adentify.clickedDiv = this.parentNode.id; //lets define the clickedDiv as soon as the modal is opened, and use that to send the data. This fixes an issue where if the ad slot refreshed by the time you sent the report, we still have the right div ID to send instead of an error thrown
             const initFormListeners = () => {
                 const feedbackForm = document.getElementById("feedbackForm");
 
@@ -351,8 +351,8 @@ function tmgLoadAdentify() {
                         Name: name,
                         Email: email,
                         Complaint: complaint,
-                        Adentify: window.top.adentify.results.slots ? JSON.stringify(window.top.adentify.results.slots[this.parentNode.id], null, 2) : "N/A",
-                        DivId: this.parentNode.id, // add the ID of the parent element of the button that was clicked
+                        Adentify: window.top.adentify.results.slots ? JSON.stringify(window.top.adentify.results.slots[window.top.adentify.clickedDiv], null, 2) : "N/A",
+                        DivId: window.top.adentify.clickedDiv ? JSON.stringify(window.top.adentify.clickedDiv) : "N/A", // add the ID of the parent element of the button that was clicked
                         Timestamp: new Date().toISOString() // add a timestamp for the current entry
                     };
 
@@ -394,7 +394,7 @@ function tmgLoadAdentify() {
 
                 //console.info("Sending feedback:", latestFormData);
 
-                const adentifyResults = JSON.stringify(window.top.adentify.results.slots[this.parentNode.id], null, 4);
+                const adentifyResults = JSON.stringify(window.top.adentify.results.slots[window.top.adentify.clickedDiv], null, 4);
                 const adentifyMaxLength = 4000; // maximum length of a message attachment field in Slack
                 const adentifyChunks = []; // array to store the Adentify data chunks
 
