@@ -1,10 +1,10 @@
-function tmgLoadAdentify() {
+function tmgLoadAdentify() { //I don't use this myself, better to use your own function or event / pubsub topic that indicates the beginning of the ad execution process, to ensure we attach the event listener in time, but also aren't loading the script too early either
     console.info('ADTECH: Advert Feedback System Injected')
     window.top.googletag.cmd.push(function() {
         window.top.adentify = window.top.adentify || {};
         window.top.adentify.about = { // deatils about this version of the code
-            version: '0.11',
-            date: '09-05-2023',
+            version: '0.12',
+            date: '29-06-2023',
             company: 'Telegraph Media Group',
             author: 'Fikret Hassan - fikret@telegraph.co.uk & Sean Dillon - sean@telegraph.co.uk',
             credit: 'Sean Dillon: https://github.com/adentify/, getAdData.js gist by rdillmanCN: https://gist.github.com/rdillmanCN/'
@@ -331,7 +331,12 @@ function tmgLoadAdentify() {
             //console.info('ADTECH adentify.js: The div clicked on had ID: ' + this.parentNode.id);
 
             let latestFormData = null; // store the latest form data
-            window.top.adentify.clickedDiv = this.parentNode.id; //lets define the clickedDiv as soon as the modal is opened, and use that to send the data. This fixes an issue where if the ad slot refreshed by the time you sent the report, we still have the right div ID to send instead of an error thrown
+            window.top.adentify.buttonInteraction = {} // namespace to work in for button interaction
+            window.top.adentify.buttonInteraction.clickedDiv = this.parentNode.id;
+            window.top.adentify.buttonInteraction.queryId = this.parentNode.getAttribute('data-google-query-id') || '';
+            window.top.adentify.buttonInteraction.clickedDivAndQueryId = window.top.adentify.buttonInteraction.clickedDiv + '--' + window.top.adentify.buttonInteraction.queryId; //lets define the clickedDiv as soon as the modal is opened, and use that to send the data. 
+            //This fixes an issue where if the ad slot refreshed by the time you sent the report, we still have the right div ID to send instead of an error thrown.
+            //We've now added the queryId as part of this for ads that refresh, whilst still keeping all of the ads in question in the report sent incase this is useful
             const initFormListeners = () => {
                 const feedbackForm = document.getElementById("feedbackForm");
 
@@ -352,9 +357,11 @@ function tmgLoadAdentify() {
                         Name: name,
                         Email: email,
                         Complaint: complaint,
-                        Adentify: window.top.adentify.results.slots ? JSON.stringify(window.top.adentify.results.slots[window.top.adentify.clickedDiv], null, 2) : "N/A",
-                        DivId: window.top.adentify.clickedDiv ? JSON.stringify(window.top.adentify.clickedDiv) : "N/A", // add the ID of the parent element of the button that was clicked
-                        Timestamp: new Date().toISOString() // add a timestamp for the current entry
+                        Adentify: window.top.adentify.results.slots ? JSON.stringify(window.top.adentify.results.slots[window.top.adentify.buttonInteraction.clickedDiv], null, 2) : "N/A",
+                        //DivIdQueryId: window.top.adentify.clickedDivAndQueryId ? JSON.stringify(window.top.adentify.clickedDivAndQueryId) : "N/A", // add the ID and queryId of the parent element of the button that was clicked
+                        Timestamp: new Date().toISOString(), // add a timestamp for the current entry
+                        URL: window.location.href,
+                        QueryIdURL: 'https://admanager.google.com/' + googletag.pubads().getSlots()[0].getAdUnitPath().match(/\/?(.*?)\//)[1] + '#troubleshooting/screenshot/query_id='+window.top.adentify.buttonInteraction.queryId
                     };
 
                     //console.info("Submitting data:", data);
@@ -395,7 +402,7 @@ function tmgLoadAdentify() {
 
                 //console.info("Sending feedback:", latestFormData);
 
-                const adentifyResults = JSON.stringify(window.top.adentify.results.slots[window.top.adentify.clickedDiv], null, 4);
+                const adentifyResults = JSON.stringify(window.top.adentify.results.slots[window.top.adentify.buttonInteraction.clickedDiv][window.top.adentify.buttonInteraction.queryId], null, 4);
                 const adentifyMaxLength = 4000; // maximum length of a message attachment field in Slack
                 const adentifyChunks = []; // array to store the Adentify data chunks
 
@@ -440,12 +447,20 @@ function tmgLoadAdentify() {
                         {
                             "color": "#36a64f",
                             "fields": [{
-                                    "title": "DivId",
-                                    "value": latestFormData.DivId
+                                    "title": "Reported div and query ID",
+                                    "value": latestFormData.DivIdQueryId
                                 },
                                 {
                                     "title": "Timestamp",
                                     "value": latestFormData.Timestamp
+                                },
+                                {
+                                    "title": "URL",
+                                    "value": latestFormData.URL
+                                },
+                                {
+                                    "title": "Query ID Inspector",
+                                    "value": latestFormData.QueryIdURL
                                 }
                             ]
                         }
