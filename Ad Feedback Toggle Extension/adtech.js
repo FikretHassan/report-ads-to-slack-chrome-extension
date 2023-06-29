@@ -447,10 +447,6 @@ function tmgLoadAdentify() { //I don't use this myself, better to use your own f
                         {
                             "color": "#36a64f",
                             "fields": [{
-                                    "title": "Reported div and query ID",
-                                    "value": latestFormData.DivIdQueryId
-                                },
-                                {
                                     "title": "Timestamp",
                                     "value": latestFormData.Timestamp
                                 },
