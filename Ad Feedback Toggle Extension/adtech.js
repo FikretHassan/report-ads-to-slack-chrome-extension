@@ -1,17 +1,25 @@
-function tmgLoadAdentify() { //I don't use this myself, better to use your own function or event / pubsub topic that indicates the beginning of the ad execution process, to ensure we attach the event listener in time, but also aren't loading the script too early either
-    console.info('ADTECH: Advert Feedback System Injected')
+function tmgLoadAdentify() {
+    window.top.adentify = window.top.adentify || {};
+    window.top.adentify.about = { // deatils about this version of the code
+        version: '0.13',
+        date: '30-06-2023',
+        company: 'Telegraph Media Group',
+        author: 'Fikret Hassan - fikret@telegraph.co.uk & Sean Dillon - sean@telegraph.co.uk',
+        credit: 'Sean Dillon: https://github.com/adentify/, getAdData.js gist by rdillmanCN: https://gist.github.com/rdillmanCN/'
+    };
+
+    // Configuration object
+    window.top.adentify.config = {
+        enableGdprModule: true,
+        enableCcpaModule: true,
+        enablePrebidModule: true
+    };
+
+    console.info('ADTECH: Advert Feedback System Injected');
     window.top.googletag.cmd.push(function() {
-        window.top.adentify = window.top.adentify || {};
-        window.top.adentify.about = { // deatils about this version of the code
-            version: '0.12',
-            date: '29-06-2023',
-            company: 'Telegraph Media Group',
-            author: 'Fikret Hassan - fikret@telegraph.co.uk & Sean Dillon - sean@telegraph.co.uk',
-            credit: 'Sean Dillon: https://github.com/adentify/, getAdData.js gist by rdillmanCN: https://gist.github.com/rdillmanCN/'
-        };
 
         // gdpr module
-        if (typeof window.top.__tcfapi !== "undefined") {
+        if (window.top.adentify.config.enableGdprModule && typeof window.top.__tcfapi !== "undefined") {
             // If the TCF API is available, use it to get GDPR data
             new Promise((resolve, reject) => {
                     window.top.__tcfapi('getTCData', 2, (tcdata, success) => {
@@ -31,13 +39,13 @@ function tmgLoadAdentify() { //I don't use this myself, better to use your own f
                     window.top.adentify.gdprData = "TCF API ERROR: " + error.message;
                 });
         } else {
-            // If the TCF API is not available, set gdprData to a string indicating this
-            window.top.adentify.gdprData = "NO GDPR API AVAILABLE";
+            // If the TCF API is not available, or we've turned it off, empty gdprData out
+            window.top.adentify.gdprData = {};
         }
 
 
         // ccpa module
-        if (typeof window.__uspapi !== "undefined") {
+        if (window.top.adentify.config.enableCcpaModule && typeof window.__uspapi !== "undefined") {
             // If the CCPA API is available, use it to get CCPA data
             new Promise((resolve, reject) => {
                     window.__uspapi('getUSPData', 1, (uspdata, success) => {
@@ -57,23 +65,43 @@ function tmgLoadAdentify() { //I don't use this myself, better to use your own f
                     window.adentify.ccpaData = "CCPA API ERROR: " + error.message;
                 });
         } else {
-            // If the CCPA API is not available, set ccpaData to a string indicating this
-            window.adentify.ccpaData = "NO CCPA API AVAILABLE";
+            // If the CCPA API is not available, or we've turned it off, empty ccpaData out
+            window.adentify.ccpaData = {};
         }
 
         // prebid.js module
-        if (typeof window.top.pbjs !== "undefined") {
+        if (window.top.adentify.config.enablePrebidModule && typeof window.top.pbjs !== "undefined") {
             window.top.adentify.getPrebidInfo = function() {
                 window.top.adentify.pbjsData = window.top.adentify.pbjsData || {};
-                window.top.adentify.pbjsData.adServerTargeting = window.top.pbjs.getAdserverTargeting() || "";
+
+                // Check if getAdserverTargeting function exists
+                if (typeof window.top.pbjs.getAdserverTargeting === "function") {
+                    window.top.adentify.pbjsData.adServerTargeting = window.top.pbjs.getAdserverTargeting();
+                } else {
+                    window.top.adentify.pbjsData.adServerTargeting = "";
+                }
+
+                // Check if getEvents function exists
+                if (typeof window.top.pbjs.getEvents === "function") {
+                    window.top.adentify.pbjsData.events = window.top.pbjs.getEvents();
+                } else {
+                    window.top.adentify.pbjsData.events = [];
+                }
+
+                // Check if readConfig function exists
+                if (typeof window.top.pbjs.readConfig === "function") {
+                    window.top.adentify.pbjsData.config = window.top.pbjs.readConfig();
+                } else {
+                    window.top.adentify.pbjsData.config = {};
+                }
+
                 window.top.adentify.pbjsData.installedModules = window.top.pbjs.installedModules || "";
-                window.top.adentify.pbjsData.events = window.top.pbjs.getEvents();
-                window.top.adentify.pbjsData.config = window.top.pbjs.readConfig();
-            }
+            };
         } else {
             window.top.adentify.getPrebidInfo = function() {};
-            window.top.adentify.pbjsData = "NO PBJS DATA AVAILABLE";
+            window.top.adentify.pbjsData = {};
         }
+
 
         // this inserts into the advert divs
         function adentifyDynamicAds(div) {
@@ -233,8 +261,10 @@ function tmgLoadAdentify() { //I don't use this myself, better to use your own f
                 //console.info(slot.getEscapedQemQueryId());
                 //console.info('ADTECH adentify.js: Exclusion rule results: ' + exclusionRules);
 
-                // get the latest prebid info for window.top.adentify.getPrebidInfo
+                // get the latest prebid info for window.top.adentify.getPrebidInfo. Only do this if the prebid module is enabled
+                if (window.top.adentify.config.enablePrebidModule){
                 window.top.adentify.getPrebidInfo()
+                }
 
                 // get the latest GAM info for window.top.adentify.results
                 getAllAdsData();
@@ -361,7 +391,7 @@ function tmgLoadAdentify() { //I don't use this myself, better to use your own f
                         //DivIdQueryId: window.top.adentify.clickedDivAndQueryId ? JSON.stringify(window.top.adentify.clickedDivAndQueryId) : "N/A", // add the ID and queryId of the parent element of the button that was clicked
                         Timestamp: new Date().toISOString(), // add a timestamp for the current entry
                         URL: window.location.href,
-                        QueryIdURL: 'https://admanager.google.com/' + googletag.pubads().getSlots()[0].getAdUnitPath().match(/\/?(.*?)\//)[1] + '#troubleshooting/screenshot/query_id='+window.top.adentify.buttonInteraction.queryId
+                        QueryIdURL: 'https://admanager.google.com/' + googletag.pubads().getSlots()[0].getAdUnitPath().match(/\/?(.*?)\//)[1] + '#troubleshooting/screenshot/query_id=' + window.top.adentify.buttonInteraction.queryId
                     };
 
                     //console.info("Submitting data:", data);
@@ -494,15 +524,33 @@ function tmgLoadAdentify() { //I don't use this myself, better to use your own f
 
     })
 }
-if (document.readyState !== 'complete') {
-    // Wait for the page to finish loading
-    document.onreadystatechange = function() {
-        if (document.readyState === 'complete') {
-            // Page has finished loading, so fire the function
-            tmgLoadAdentify();
+(function isAdentifyReady(useMaxAttempts) {
+// this allows us to attempt to inject the script once googletag is ready for a maximum number of times (default to 5 seconds @ 250ms checks) or just tick over forever (or until googletag is ready)    
+    if (useMaxAttempts) {
+      var maxAttempts = 20; // Maximum number of attempts
+      var attempts = 0; // Counter variable for attempts
+  
+      function checkAdentify() {
+        if (window.top.googletag && window.top.googletag.pubadsReady) {
+          tmgLoadAdentify();
+        } else if (attempts < maxAttempts) {
+          attempts++;
+          setTimeout(checkAdentify, 250);
+        } else {
+          console.info("ADENTIFY: Maximum attempts to inject Ads Feedback script reached. Googletag is not ready.");
         }
-    };
-} else {
-    // Page has already finished loading, so just fire the function
-    tmgLoadAdentify();
-}
+      }
+  
+      checkAdentify();
+    } else {
+      function checkAdentify() {
+        if (window.top.googletag && window.top.googletag.pubadsReady) {
+          tmgLoadAdentify();
+        } else {
+          setTimeout(checkAdentify, 250);
+        }
+      }
+  
+      checkAdentify();
+    }
+  })(true); // Pass true or false to enable/disable the maximum attempts setup  
