@@ -1,8 +1,8 @@
 function tmgLoadAdentify() {
     window.top.adentify = window.top.adentify || {};
     window.top.adentify.about = { // deatils about this version of the code
-        version: '0.13',
-        date: '30-06-2023',
+        version: '0.14',
+        date: '03-07-2023',
         company: 'Telegraph Media Group',
         author: 'Fikret Hassan - fikret@telegraph.co.uk & Sean Dillon - sean@telegraph.co.uk',
         credit: 'Sean Dillon: https://github.com/adentify/, getAdData.js gist by rdillmanCN: https://gist.github.com/rdillmanCN/'
@@ -12,7 +12,8 @@ function tmgLoadAdentify() {
     window.top.adentify.config = {
         enableGdprModule: true,
         enableCcpaModule: true,
-        enablePrebidModule: true
+        enablePrebidModule: true,
+        enableAmazonModule: true
     };
 
     console.info('ADTECH: Advert Feedback System Injected');
@@ -102,6 +103,50 @@ function tmgLoadAdentify() {
             window.top.adentify.pbjsData = {};
         }
 
+        // Amazon / APS module - I do not work with aps so this is experimental and may not work as intended whilst I test its functionality
+        if (window.top.adentify.config.enableAmazonModule && typeof window.top.apstag !== "undefined") {
+            window.top.adentify.getAmazonInfo = function() {
+                window.top.adentify.amazonData = window.top.adentify.amazonData || {};
+
+                // Check if fetchBids function exists
+                if (typeof window.top.apstag.fetchBids === "function") {
+                    var slots = window.top.googletag.pubads().getSlots().map(function(slot) {
+                        return {
+                            slotID: slot.getSlotElementId(),
+                            slotName: slot.getAdUnitPath(),
+                            sizes: slot.getSizes(window.innerWidth, window.innerHeight).map(function(size) {
+                                if (size.getWidth && size.getHeight) {
+                                    return [size.getWidth(), size.getHeight()];
+                                } else {
+                                    return [size[0], size[1]];
+                                }
+                            })
+                        };
+                    });
+
+                    // Store the Amazon TAM / UAM targeting keys in the adentify object
+                    window.top.apstag.fetchBids({
+                        slots: slots
+                    }, function(bids) {
+                        window.top.adentify.amazonData.targetingKeys = bids.reduce(function(result, bid) {
+                            result[bid.slotID] = bid.targeting;
+                            return result;
+                        }, {});
+
+                        // Populate amazonData.slots with the slotIDs from the fetched bids
+                        window.top.adentify.amazonData.slots = bids.map(function(bid) {
+                            return bid.slotID;
+                        });
+                    });
+                } else {
+                    window.top.adentify.amazonData.slots = [];
+                    window.top.adentify.amazonData.targetingKeys = {};
+                }
+            };
+        } else {
+            window.top.adentify.getAmazonInfo = function() {};
+            window.top.adentify.amazonData = {};
+        }
 
         // this inserts into the advert divs
         function adentifyDynamicAds(div) {
@@ -262,8 +307,12 @@ function tmgLoadAdentify() {
                 //console.info('ADTECH adentify.js: Exclusion rule results: ' + exclusionRules);
 
                 // get the latest prebid info for window.top.adentify.getPrebidInfo. Only do this if the prebid module is enabled
-                if (window.top.adentify.config.enablePrebidModule){
-                window.top.adentify.getPrebidInfo()
+                if (window.top.adentify.config.enablePrebidModule && typeof window.top.pbjs !== "undefined") {
+                    window.top.adentify.getPrebidInfo()
+                }
+
+                if (window.top.adentify.config.enableAmazonModule && typeof window.top.apstag !== "undefined") {
+                    window.top.adentify.getAmazonInfo()
                 }
 
                 // get the latest GAM info for window.top.adentify.results
@@ -525,32 +574,32 @@ function tmgLoadAdentify() {
     })
 }
 (function isAdentifyReady(useMaxAttempts) {
-// this allows us to attempt to inject the script once googletag is ready for a maximum number of times (default to 5 seconds @ 250ms checks) or just tick over forever (or until googletag is ready)    
+    // this allows us to attempt to inject the script once googletag is ready for a maximum number of times (default to 5 seconds @ 250ms checks) or just tick over forever (or until googletag is ready)    
     if (useMaxAttempts) {
-      var maxAttempts = 20; // Maximum number of attempts
-      var attempts = 0; // Counter variable for attempts
-  
-      function checkAdentify() {
-        if (window.top.googletag && window.top.googletag.pubadsReady) {
-          tmgLoadAdentify();
-        } else if (attempts < maxAttempts) {
-          attempts++;
-          setTimeout(checkAdentify, 250);
-        } else {
-          console.info("ADENTIFY: Maximum attempts to inject Ads Feedback script reached. Googletag is not ready.");
+        var maxAttempts = 20; // Maximum number of attempts
+        var attempts = 0; // Counter variable for attempts
+
+        function checkAdentify() {
+            if (window.top.googletag && window.top.googletag.pubadsReady) {
+                tmgLoadAdentify();
+            } else if (attempts < maxAttempts) {
+                attempts++;
+                setTimeout(checkAdentify, 250);
+            } else {
+                console.info("ADENTIFY: Maximum attempts to inject Ads Feedback script reached. Googletag is not ready.");
+            }
         }
-      }
-  
-      checkAdentify();
+
+        checkAdentify();
     } else {
-      function checkAdentify() {
-        if (window.top.googletag && window.top.googletag.pubadsReady) {
-          tmgLoadAdentify();
-        } else {
-          setTimeout(checkAdentify, 250);
+        function checkAdentify() {
+            if (window.top.googletag && window.top.googletag.pubadsReady) {
+                tmgLoadAdentify();
+            } else {
+                setTimeout(checkAdentify, 250);
+            }
         }
-      }
-  
-      checkAdentify();
+
+        checkAdentify();
     }
-  })(true); // Pass true or false to enable/disable the maximum attempts setup  
+})(true); // Pass true or false to enable/disable the maximum attempts setup  
