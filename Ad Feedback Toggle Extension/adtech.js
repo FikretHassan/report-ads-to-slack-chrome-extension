@@ -1,8 +1,8 @@
 function tmgLoadAdentify() {
     window.top.adentify = window.top.adentify || {};
-    window.top.adentify.about = { // deatils about this version of the code
-        version: '0.14',
-        date: '03-07-2023',
+    window.top.adentify.about = { // details about this version of the code
+        version: '0.15',
+        date: '07-07-2023',
         company: 'Telegraph Media Group',
         author: 'Fikret Hassan - fikret@telegraph.co.uk & Sean Dillon - sean@telegraph.co.uk',
         credit: 'Sean Dillon: https://github.com/adentify/, getAdData.js gist by rdillmanCN: https://gist.github.com/rdillmanCN/'
@@ -46,10 +46,10 @@ function tmgLoadAdentify() {
 
 
         // ccpa module
-        if (window.top.adentify.config.enableCcpaModule && typeof window.__uspapi !== "undefined") {
+        if (window.top.adentify.config.enableCcpaModule && typeof window.top.__uspapi !== "undefined") {
             // If the CCPA API is available, use it to get CCPA data
             new Promise((resolve, reject) => {
-                    window.__uspapi('getUSPData', 1, (uspdata, success) => {
+                    window.top.__uspapi('getUSPData', 1, (uspdata, success) => {
                         if (success && uspdata) {
                             resolve(uspdata);
                         } else {
@@ -59,15 +59,15 @@ function tmgLoadAdentify() {
                 })
                 .then(uspdata => {
                     // Store CCPA data in adentify object
-                    window.adentify.ccpaData = uspdata;
+                    window.top.adentify.ccpaData = uspdata;
                 })
                 .catch(error => {
                     // Handle errors with the CCPA API call
-                    window.adentify.ccpaData = "CCPA API ERROR: " + error.message;
+                    window.top.adentify.ccpaData = "CCPA API ERROR: " + error.message;
                 });
         } else {
             // If the CCPA API is not available, or we've turned it off, empty ccpaData out
-            window.adentify.ccpaData = {};
+            window.top.adentify.ccpaData = {};
         }
 
         // prebid.js module
@@ -356,7 +356,7 @@ function tmgLoadAdentify() {
             result.outOfPage = data && !!data.outOfPage;
             result.sourceAgnosticCreativeId = data && data.sourceAgnosticCreativeId || "";
             result.sourceAgnosticLineItemId = data && data.sourceAgnosticLineItemId || "";
-            result.DFP = data && data.creativeId && "https://www.google.com/dfp/" + googletag.pubads().getSlots()[0].getAdUnitPath().match(/\/?(.*?)\//)[1] + "#delivery/CreativeDetail/creativeId=" + data.creativeId || "";
+            result.DFP = data && data.creativeId && "https://www.google.com/dfp/" + window.top.googletag.pubads().getSlots()[0].getAdUnitPath().match(/\/?(.*?)\//)[1] + "#delivery/CreativeDetail/creativeId=" + data.creativeId || "";
             // added a regexp to grab the GAM account ID better. Before we were expecting the format to be /GAM-ID/, but notice some sites use GAM-ID/ - this works on both
             // Get ad sizes for the slot
             slot.getSizes().forEach(function(size) {
@@ -417,7 +417,7 @@ function tmgLoadAdentify() {
             //This fixes an issue where if the ad slot refreshed by the time you sent the report, we still have the right div ID to send instead of an error thrown.
             //We've now added the queryId as part of this for ads that refresh, whilst still keeping all of the ads in question in the report sent incase this is useful
             const initFormListeners = () => {
-                const feedbackForm = document.getElementById("feedbackForm");
+                const feedbackForm = window.top.document.getElementById("feedbackForm");
 
                 const submitForm = (event) => {
                     event.preventDefault();
@@ -439,8 +439,8 @@ function tmgLoadAdentify() {
                         Adentify: window.top.adentify.results.slots ? JSON.stringify(window.top.adentify.results.slots[window.top.adentify.buttonInteraction.clickedDiv], null, 2) : "N/A",
                         //DivIdQueryId: window.top.adentify.clickedDivAndQueryId ? JSON.stringify(window.top.adentify.clickedDivAndQueryId) : "N/A", // add the ID and queryId of the parent element of the button that was clicked
                         Timestamp: new Date().toISOString(), // add a timestamp for the current entry
-                        URL: window.location.href,
-                        QueryIdURL: 'https://admanager.google.com/' + googletag.pubads().getSlots()[0].getAdUnitPath().match(/\/?(.*?)\//)[1] + '#troubleshooting/screenshot/query_id=' + window.top.adentify.buttonInteraction.queryId
+                        URL: window.top.location.href,
+                        QueryIdURL: 'https://admanager.google.com/' + window.top.googletag.pubads().getSlots()[0].getAdUnitPath().match(/\/?(.*?)\//)[1] + '#troubleshooting/screenshot/query_id=' + window.top.adentify.buttonInteraction.queryId
                     };
 
                     //console.info("Submitting data:", data);
@@ -454,7 +454,7 @@ function tmgLoadAdentify() {
                     // Clear the form and remove the event listener
                     feedbackForm.reset();
                     feedbackForm.removeEventListener("submit", submitForm);
-                    window.removeEventListener("beforeunload", sendFeedback);
+                    window.top.removeEventListener("beforeunload", sendFeedback);
 
                     //close the modal now
                     window.top.adentify.adentifyCloseModal();
@@ -466,7 +466,7 @@ function tmgLoadAdentify() {
                         once: true
                     });
 
-                    const closeButton = document.getElementById("adentifyCloseButton");
+                    const closeButton = window.top.document.getElementById("adentifyCloseButton");
                     closeButton.addEventListener("click", () => {
                         feedbackForm.reset();
                         feedbackForm.removeEventListener("submit", submitForm);
@@ -567,7 +567,7 @@ function tmgLoadAdentify() {
             initFormListeners();
 
             // Send feedback when the page is about to be unloaded
-            window.addEventListener("beforeunload", sendFeedback);
+            window.top.addEventListener("beforeunload", sendFeedback);
 
         }
 
