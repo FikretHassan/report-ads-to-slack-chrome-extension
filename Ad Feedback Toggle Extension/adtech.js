@@ -1,8 +1,8 @@
 function tmgLoadAdentify() {
     window.top.adentify = window.top.adentify || {};
     window.top.adentify.about = { // details about this version of the code
-        version: '0.15',
-        date: '07-07-2023',
+        version: '0.16',
+        date: '12-07-2023',
         company: 'Telegraph Media Group',
         author: 'Fikret Hassan - fikret@telegraph.co.uk & Sean Dillon - sean@telegraph.co.uk',
         credit: 'Sean Dillon: https://github.com/adentify/, getAdData.js gist by rdillmanCN: https://gist.github.com/rdillmanCN/'
@@ -172,23 +172,42 @@ function tmgLoadAdentify() {
         function createAdentifyModal() {
             var div = window.top.document.createElement('div');
             div.innerHTML = '<div id="adentifyOpenModal" class="adentifyModalDialog"> \
-                <div> \
-                  <a href="javascript:adentify.adentifyCloseModal();" title="Close" class="close"><div id="adentifyCloseButton">X</div></a> \
-                  <h2>Advertising Feedback</h2> \
-                  <p>Please provide your feedback below:</p> \
-                  <form id="feedbackForm"> \
-                    <label for="name">Name:</label> \
-                    <input type="text" id="name" name="name" required><br><br> \
-                    <label for="email">Email:</label> \
-                    <input type="email" id="email" name="email" required><br><br> \
-                    <label for="complaint">Complaint:</label><br> \
-                    <textarea id="complaint" name="complaint" rows="4" cols="40" required></textarea><br><br> \
-                    <input type="submit" value="Submit"> \
-                  </form> \
+            <div> \
+              <a href="javascript:adentify.adentifyCloseModal();" title="Close" class="close"><div id="adentifyCloseButton">X</div></a> \
+              <h2>Advertising Feedback</h2> \
+              <form id="feedbackForm"> \
+                <label for="name">Name:</label> \
+                <input type="text" id="name" name="name" required><br><br> \
+                <label for="email">Email:</label> \
+                <input type="email" id="email" name="email" required><br><br> \
+                <div class="advertIs"> \
+                  <label>This advert is:</label><br> \
+                  <label for="complaint1"><input type="checkbox" id="complaint1" name="commonComplaint" value="Broken"> Broken </label><br> \
+                  <label for="complaint2"><input type="checkbox" id="complaint2" name="commonComplaint" value="Irrelevant"> Irrelevant </label><br> \
+                  <label for="complaint3"><input type="checkbox" id="complaint3" name="commonComplaint" value="Shown too often"> Shown too often </label><br> \
+                  <label for="complaint4"><input type="checkbox" id="complaint4" name="commonComplaint" value="Annoying"> Annoying </label><br> \
                 </div> \
-              </div> \
-              <style> \
+                <label for="complaint">Feedback:</label><br> \
+                <textarea id="complaint" name="complaint" rows="4" cols="40" required></textarea><br><br> \
+                <input type="submit" value="Submit"> \
+              </form> \
+            </div> \
+          </div> \
+          <style> \
+            .adentifyModalDialog form .advertIs { \
+              line-height: 0.5; \
+            } \
+            .adentifyModalDialog form .advertIs label { \
+                display: block; \
+                font-weight: bold; \
+              } \
+              \
+              .adentifyModalDialog form .advertIs label input[type="checkbox"] { \
+                margin-right: 5px; \
+                vertical-align: middle; /* Align the checkboxes vertically */ \
+              } \
               .adentifyModalDialog { \
+                display: flex; \
                 position: fixed; \
                 font-family: "Helvetica Neue", sans-serif; \
                 top: 0; \
@@ -197,7 +216,6 @@ function tmgLoadAdentify() {
                 left: 0; \
                 background: rgba(0, 0, 0, 0.8); \
                 z-index: 999999999999; \
-                display: flex; \
                 align-items: center; \
                 justify-content: center; \
                 -webkit-transition: opacity 400ms ease-in; \
@@ -230,7 +248,6 @@ function tmgLoadAdentify() {
                 text-align: center; \
               } \
               .adentifyModalDialog form { \
-                display: flex; \
                 flex-direction: column; \
                 align-items: center; \
                 justify-content: center; \
@@ -245,7 +262,6 @@ function tmgLoadAdentify() {
               .adentifyModalDialog textarea { \
                 width: 100%; \
                 max-width: 100%; \
-                margin: 0 0 20px; \
                 padding: 10px; \
                 border: none; \
                 border-radius: 5px; \
@@ -421,12 +437,22 @@ function tmgLoadAdentify() {
 
                 const submitForm = (event) => {
                     event.preventDefault();
-
+                
                     const formData = new FormData(feedbackForm);
                     const name = formData.get("name");
                     const email = formData.get("email");
                     const complaint = formData.get("complaint");
-
+                    let defaultCommonComplaints = ["None"];
+                    let commonComplaints = [];
+                
+                    // Get the selected common complaints
+                    const selectedCommonComplaints = formData.getAll("commonComplaint");
+                    if (selectedCommonComplaints.length > 0) {
+                        commonComplaints = selectedCommonComplaints.join(", ");
+                    } else {
+                        commonComplaints = defaultCommonComplaints;
+                    }
+                
                     if (!name || !email || !complaint) {
                         //console.info("Please fill in all fields");
                         return;
@@ -436,6 +462,7 @@ function tmgLoadAdentify() {
                         Name: name,
                         Email: email,
                         Complaint: complaint,
+                        CommonComplaints: commonComplaints,
                         Adentify: window.top.adentify.results.slots ? JSON.stringify(window.top.adentify.results.slots[window.top.adentify.buttonInteraction.clickedDiv], null, 2) : "N/A",
                         //DivIdQueryId: window.top.adentify.clickedDivAndQueryId ? JSON.stringify(window.top.adentify.clickedDivAndQueryId) : "N/A", // add the ID and queryId of the parent element of the button that was clicked
                         Timestamp: new Date().toISOString(), // add a timestamp for the current entry
@@ -519,7 +546,12 @@ function tmgLoadAdentify() {
                                 {
                                     "title": "Complaint",
                                     "value": latestFormData.Complaint
+                                },
+                                {
+                                    "title": "Options Selected",
+                                    "value": Array.isArray(latestFormData.CommonComplaints) ? latestFormData.CommonComplaints.join(", ") : latestFormData.CommonComplaints
                                 }
+                                
                             ]
                         },
                         ...adentifyAttachment,
