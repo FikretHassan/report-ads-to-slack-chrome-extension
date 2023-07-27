@@ -38,7 +38,7 @@ function tmgLoadAdentify() {
 
 
 
-    adentify.log('ADENTIFY.JS: Advert Feedback System Injected');
+    window.top.adentify.log('ADENTIFY.JS: Advert Feedback System Injected');
     window.top.googletag.cmd.push(function() {
 
         // gdpr module
@@ -348,7 +348,7 @@ function tmgLoadAdentify() {
                 // dont run this function if the report button is already there for this slot, as it means its already ran, or if anything in exclusionRules is met
                 if ((!window.top.document.getElementById(slot.getSlotElementId()).querySelector('#report-button')) && !window.top.adentify.config.button.exclusionRules(slot)) {
                     window.top.adentify.adentifyDynamicAds(slot.getSlotElementId());
-                    adentify.log('slotRenderEnded: Adding button to slot '+slot.getSlotElementId());
+                    window.top.adentify.log('slotRenderEnded: Adding button to slot '+slot.getSlotElementId());
                 }
             }
         );
@@ -358,7 +358,7 @@ function tmgLoadAdentify() {
         window.top.adentify.injectButtonsToAlreadyLoadedAds = function() {
             // Only run the function if it hasn't been run before
             if (!window.top.adentify.injectButtonsToAlreadyLoadedAdsRan) {
-                adentify.log('ADENTIFY.JS: Adding button to slots loaded prior to adentify loading..')
+                window.top.adentify.log('ADENTIFY.JS: Adding button to slots loaded prior to adentify loading..')
                 var slots = window.top.googletag.pubads().getSlots();
                 slots.forEach(function(slot) {
                     var slotId = slot.getSlotElementId();
@@ -382,7 +382,7 @@ function tmgLoadAdentify() {
                         if (!window.top.adentify.config.button.exclusionRules(slot)) {
                             // Inject the button
                             window.top.adentify.adentifyDynamicAds(slotId);
-                            adentify.log('injectButtonsToAlreadyLoadedAds: Adding button to slot '+slotId);
+                            window.top.adentify.log('injectButtonsToAlreadyLoadedAds: Adding button to slot '+slotId);
                         }
                     }
                 });
@@ -524,7 +524,7 @@ function tmgLoadAdentify() {
                         QueryIdURL: 'https://admanager.google.com/' + window.top.googletag.pubads().getSlots()[0].getAdUnitPath().match(/\/?(.*?)\//)[1] + '#troubleshooting/screenshot/query_id=' + window.top.adentify.buttonInteraction.queryId
                     };
 
-                    adentify.log("Submitting data:", data);
+                    window.top.adentify.log("Submitting data:", data);
 
                     // Store the latest form data
                     latestFormData = data;
@@ -560,7 +560,7 @@ function tmgLoadAdentify() {
                     return;
                 }
 
-                adentify.log("Sending feedback:", latestFormData);
+                window.top.adentify.log("Sending feedback:", latestFormData);
 
                 const adentifyResults = JSON.stringify(window.top.adentify.results.slots[window.top.adentify.buttonInteraction.clickedDiv][window.top.adentify.buttonInteraction.queryId], null, 4);
                 const adentifyMaxLength = 4000; // maximum length of a message attachment field in Slack
