@@ -8,23 +8,37 @@ function tmgLoadAdentify() {
         credit: 'Sean Dillon: https://github.com/adentify/, getAdData.js gist by rdillmanCN: https://gist.github.com/rdillmanCN/'
     };
 
-// Configuration object
-window.top.adentify.config = {
-    enableGdprModule: true,
-    enableCcpaModule: true,
-    enablePrebidModule: true,
-    enableAmazonModule: true,
-    button: {
-        exclusionAdvertiserIds: ['14636214'],
-        exclusionRules: function(slot) {
-            var exclusionPositions = slot.getOutOfPage();
-            var exclusionAdvertiserIdsLogic = slot.getResponseInformation() && slot.getResponseInformation().advertiserId;
-            return (exclusionPositions || (this.exclusionAdvertiserIds.includes(String(exclusionAdvertiserIdsLogic))));
+    // Configuration object
+    window.top.adentify.config = {
+        enableGdprModule: true,
+        enableCcpaModule: true,
+        enablePrebidModule: true,
+        enableAmazonModule: true,
+        button: {
+            exclusionAdvertiserIds: ['14636214'],
+            exclusionRules: function(slot) {
+                var exclusionPositions = slot.getOutOfPage();
+                var exclusionAdvertiserIdsLogic = slot.getResponseInformation() && slot.getResponseInformation().advertiserId;
+                return (exclusionPositions || (this.exclusionAdvertiserIds.includes(String(exclusionAdvertiserIdsLogic))));
+            }
         }
-    }
-};
+    };
 
-    console.info('ADTECH: Advert Feedback System Injected');
+    // Initialize the logs array
+    window.top.adentify.logMessages = [];
+
+    window.top.adentify.log = function(message) {
+        var timestamp = new Date().toISOString();
+        this.logMessages.push(timestamp + ': ' + message);
+    };
+
+    window.top.adentify.logs = function() {
+        return this.logMessages;
+    };
+
+
+
+    adentify.log('ADENTIFY.JS: Advert Feedback System Injected');
     window.top.googletag.cmd.push(function() {
 
         // gdpr module
@@ -334,6 +348,7 @@ window.top.adentify.config = {
                 // dont run this function if the report button is already there for this slot, as it means its already ran, or if anything in exclusionRules is met
                 if ((!window.top.document.getElementById(slot.getSlotElementId()).querySelector('#report-button')) && !window.top.adentify.config.button.exclusionRules(slot)) {
                     window.top.adentify.adentifyDynamicAds(slot.getSlotElementId());
+                    adentify.log('slotRenderEnded: Adding button to slot '+slot.getSlotElementId());
                 }
             }
         );
@@ -341,44 +356,45 @@ window.top.adentify.config = {
         window.top.adentify.injectButtonsToAlreadyLoadedAdsRan = false; // Initialize the flag
 
         window.top.adentify.injectButtonsToAlreadyLoadedAds = function() {
-        // Only run the function if it hasn't been run before
-        if (!window.top.adentify.injectButtonsToAlreadyLoadedAdsRan) {
-            var slots = window.top.googletag.pubads().getSlots();
-            slots.forEach(function(slot) {
-                var slotId = slot.getSlotElementId();
-                var slotElement = window.top.document.getElementById(slotId);
+            // Only run the function if it hasn't been run before
+            if (!window.top.adentify.injectButtonsToAlreadyLoadedAdsRan) {
+                adentify.log('ADENTIFY.JS: Adding button to slots loaded prior to adentify loading..')
+                var slots = window.top.googletag.pubads().getSlots();
+                slots.forEach(function(slot) {
+                    var slotId = slot.getSlotElementId();
+                    var slotElement = window.top.document.getElementById(slotId);
 
-                // get the latest prebid info for window.top.adentify.getPrebidInfo. Only do this if the prebid module is enabled
-                if (window.top.adentify.config.enablePrebidModule && typeof window.top.pbjs !== "undefined") {
-                    window.top.adentify.getPrebidInfo()
-                }
-
-                if (window.top.adentify.config.enableAmazonModule && typeof window.top.apstag !== "undefined") {
-                    window.top.adentify.getAmazonInfo()
-                }
-
-                // get the latest GAM info for window.top.adentify.results
-                getAllAdsData();
-
-                // Check if the slot has been rendered and doesn't have the 'button-added' class
-                if (slot.getResponseInformation() && !slotElement.querySelector('#report-button')) {
-                    // Only add the button if the exclusions rules are not met
-                    if (!window.top.adentify.config.button.exclusionRules(slot)) {
-                        // Inject the button
-                        window.top.adentify.adentifyDynamicAds(slotId);
+                    // get the latest prebid info for window.top.adentify.getPrebidInfo. Only do this if the prebid module is enabled
+                    if (window.top.adentify.config.enablePrebidModule && typeof window.top.pbjs !== "undefined") {
+                        window.top.adentify.getPrebidInfo()
                     }
-                }
-            });
 
-            // Update the flag to indicate that the function has been run
-            window.top.adentify.injectButtonsToAlreadyLoadedAdsRan = true;
-        }
-    };
+                    if (window.top.adentify.config.enableAmazonModule && typeof window.top.apstag !== "undefined") {
+                        window.top.adentify.getAmazonInfo()
+                    }
+
+                    // get the latest GAM info for window.top.adentify.results
+                    getAllAdsData();
+
+                    // Check if the slot has been rendered and doesn't have the 'button-added' class
+                    if (slot.getResponseInformation() && !slotElement.querySelector('#report-button')) {
+                        // Only add the button if the exclusions rules are not met
+                        if (!window.top.adentify.config.button.exclusionRules(slot)) {
+                            // Inject the button
+                            window.top.adentify.adentifyDynamicAds(slotId);
+                            adentify.log('injectButtonsToAlreadyLoadedAds: Adding button to slot '+slotId);
+                        }
+                    }
+                });
+
+                // Update the flag to indicate that the function has been run
+                window.top.adentify.injectButtonsToAlreadyLoadedAdsRan = true;
+            }
+        };
 
         // Invoke the function at the end of the script or at any other appropriate point
         window.top.adentify.injectButtonsToAlreadyLoadedAds();
-        console.info('ADTECH: Adding button to slots loaded prior to adentify loading..')
-        
+
 
 
         // slightly modified version of rdillmanCN's gist to collect all page and slot level data for us.
@@ -475,14 +491,14 @@ window.top.adentify.config = {
 
                 const submitForm = (event) => {
                     event.preventDefault();
-                
+
                     const formData = new FormData(feedbackForm);
                     const name = formData.get("name");
                     const email = formData.get("email");
                     const complaint = formData.get("complaint");
                     let defaultCommonComplaints = ["None"];
                     let commonComplaints = [];
-                
+
                     // Get the selected common complaints
                     const selectedCommonComplaints = formData.getAll("commonComplaint");
                     if (selectedCommonComplaints.length > 0) {
@@ -490,7 +506,7 @@ window.top.adentify.config = {
                     } else {
                         commonComplaints = defaultCommonComplaints;
                     }
-                
+
                     if (!name || !email || !complaint) {
                         //console.info("Please fill in all fields");
                         return;
@@ -508,7 +524,7 @@ window.top.adentify.config = {
                         QueryIdURL: 'https://admanager.google.com/' + window.top.googletag.pubads().getSlots()[0].getAdUnitPath().match(/\/?(.*?)\//)[1] + '#troubleshooting/screenshot/query_id=' + window.top.adentify.buttonInteraction.queryId
                     };
 
-                    //console.info("Submitting data:", data);
+                    adentify.log("Submitting data:", data);
 
                     // Store the latest form data
                     latestFormData = data;
@@ -544,7 +560,7 @@ window.top.adentify.config = {
                     return;
                 }
 
-                //console.info("Sending feedback:", latestFormData);
+                adentify.log("Sending feedback:", latestFormData);
 
                 const adentifyResults = JSON.stringify(window.top.adentify.results.slots[window.top.adentify.buttonInteraction.clickedDiv][window.top.adentify.buttonInteraction.queryId], null, 4);
                 const adentifyMaxLength = 4000; // maximum length of a message attachment field in Slack
@@ -589,7 +605,7 @@ window.top.adentify.config = {
                                     "title": "Options Selected",
                                     "value": Array.isArray(latestFormData.CommonComplaints) ? latestFormData.CommonComplaints.join(", ") : latestFormData.CommonComplaints
                                 }
-                                
+
                             ]
                         },
                         ...adentifyAttachment,
@@ -656,7 +672,7 @@ window.top.adentify.config = {
                 attempts++;
                 setTimeout(checkAdentify, 250);
             } else {
-                console.info("ADENTIFY: Maximum attempts to inject Ads Feedback script reached. Googletag is not ready.");
+                adentify.log("ADENTIFY: Maximum attempts to inject Ads Feedback script reached. Googletag is not ready.");
             }
         }
 
