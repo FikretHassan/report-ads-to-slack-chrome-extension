@@ -1,20 +1,28 @@
 function tmgLoadAdentify() {
     window.top.adentify = window.top.adentify || {};
     window.top.adentify.about = { // details about this version of the code
-        version: '0.16',
-        date: '12-07-2023',
+        version: '0.17',
+        date: '27-07-2023',
         company: 'Telegraph Media Group',
         author: 'Fikret Hassan - fikret@telegraph.co.uk & Sean Dillon - sean@telegraph.co.uk',
         credit: 'Sean Dillon: https://github.com/adentify/, getAdData.js gist by rdillmanCN: https://gist.github.com/rdillmanCN/'
     };
 
-    // Configuration object
-    window.top.adentify.config = {
-        enableGdprModule: true,
-        enableCcpaModule: true,
-        enablePrebidModule: true,
-        enableAmazonModule: true
-    };
+// Configuration object
+window.top.adentify.config = {
+    enableGdprModule: true,
+    enableCcpaModule: true,
+    enablePrebidModule: true,
+    enableAmazonModule: true,
+    button: {
+        exclusionAdvertiserIds: ['14636214'],
+        exclusionRules: function(slot) {
+            var exclusionPositions = slot.getOutOfPage();
+            var exclusionAdvertiserIdsLogic = slot.getResponseInformation() && slot.getResponseInformation().advertiserId;
+            return (exclusionPositions || (this.exclusionAdvertiserIds.includes(String(exclusionAdvertiserIdsLogic))));
+        }
+    }
+};
 
     console.info('ADTECH: Advert Feedback System Injected');
     window.top.googletag.cmd.push(function() {
@@ -149,7 +157,7 @@ function tmgLoadAdentify() {
         }
 
         // this inserts into the advert divs
-        function adentifyDynamicAds(div) {
+        window.top.adentify.adentifyDynamicAds = function(div) {
             setTimeout(function() {
                 if (!window.top.document.getElementById(div).querySelector('#report-button')) {
                     //console.info('ADTECH: report button doesnt exist for this div, injecting...');
@@ -310,17 +318,6 @@ function tmgLoadAdentify() {
         window.top.googletag.pubads().addEventListener('slotRenderEnded',
             function(event) {
                 var slot = event.slot;
-                //console.group(
-                //    'ADTECH adentify.js: Slot', slot.getSlotElementId(), 'finished rendering.');
-                //console.groupEnd();
-
-                exclusionPositions = (slot.getOutOfPage());
-                exclusionAdvertiserIds = ['14636214'];
-                exclusionAdvertiserIdsLogic = slot.getResponseInformation() && slot.getResponseInformation().advertiserId;
-                exclusionRules = ((exclusionPositions) || (exclusionAdvertiserIdsLogic == exclusionAdvertiserIds)); // we don't want to add the button to any out of page <- this should be expanded substantially to possibly support specific advertisers too (like Admin)
-                //console.info(slot.getSlotElementId()+' is the slot ID, should I add the button? '+exclusionRules) // just some debugging to help ascertain the exclusionRules logic is correct
-                //console.info(slot.getEscapedQemQueryId());
-                //console.info('ADTECH adentify.js: Exclusion rule results: ' + exclusionRules);
 
                 // get the latest prebid info for window.top.adentify.getPrebidInfo. Only do this if the prebid module is enabled
                 if (window.top.adentify.config.enablePrebidModule && typeof window.top.pbjs !== "undefined") {
@@ -335,12 +332,53 @@ function tmgLoadAdentify() {
                 getAllAdsData();
 
                 // dont run this function if the report button is already there for this slot, as it means its already ran, or if anything in exclusionRules is met
-                if ((!window.top.document.getElementById(slot.getSlotElementId()).querySelector('#report-button')) && !exclusionRules) {
-                    adentifyDynamicAds(slot.getSlotElementId());
+                if ((!window.top.document.getElementById(slot.getSlotElementId()).querySelector('#report-button')) && !window.top.adentify.config.button.exclusionRules(slot)) {
+                    window.top.adentify.adentifyDynamicAds(slot.getSlotElementId());
                 }
             }
         );
 
+        window.top.adentify.injectButtonsToAlreadyLoadedAdsRan = false; // Initialize the flag
+
+        window.top.adentify.injectButtonsToAlreadyLoadedAds = function() {
+        // Only run the function if it hasn't been run before
+        if (!window.top.adentify.injectButtonsToAlreadyLoadedAdsRan) {
+            var slots = window.top.googletag.pubads().getSlots();
+            slots.forEach(function(slot) {
+                var slotId = slot.getSlotElementId();
+                var slotElement = window.top.document.getElementById(slotId);
+
+                // get the latest prebid info for window.top.adentify.getPrebidInfo. Only do this if the prebid module is enabled
+                if (window.top.adentify.config.enablePrebidModule && typeof window.top.pbjs !== "undefined") {
+                    window.top.adentify.getPrebidInfo()
+                }
+
+                if (window.top.adentify.config.enableAmazonModule && typeof window.top.apstag !== "undefined") {
+                    window.top.adentify.getAmazonInfo()
+                }
+
+                // get the latest GAM info for window.top.adentify.results
+                getAllAdsData();
+
+                // Check if the slot has been rendered and doesn't have the 'button-added' class
+                if (slot.getResponseInformation() && !slotElement.querySelector('#report-button')) {
+                    // Only add the button if the exclusions rules are not met
+                    if (!window.top.adentify.config.button.exclusionRules(slot)) {
+                        // Inject the button
+                        window.top.adentify.adentifyDynamicAds(slotId);
+                    }
+                }
+            });
+
+            // Update the flag to indicate that the function has been run
+            window.top.adentify.injectButtonsToAlreadyLoadedAdsRan = true;
+        }
+    };
+
+        // Invoke the function at the end of the script or at any other appropriate point
+        window.top.adentify.injectButtonsToAlreadyLoadedAds();
+        console.info('ADTECH: Adding button to slots loaded prior to adentify loading..')
+        
 
 
         // slightly modified version of rdillmanCN's gist to collect all page and slot level data for us.
