@@ -670,6 +670,7 @@ function tmgLoadAdentify() {
 
                         })
                         .catch(error => console.info("Error:", error));
+                        
                         //window.top.adentify.log('latestFormData: ERROR: '+JSON.stringify(error, null, 2));
                 } else {
                     //console.info("Please fill in all fields");
