@@ -15,7 +15,7 @@ function tmgLoadAdentify() {
         enablePrebidModule: true,
         enableAmazonModule: true,
         button: {
-            exclusionAdvertiserIds: ['14636214'],
+            exclusionAdvertiserIds: ['14636214','test','test2'],
             exclusionRules: function(slot) {
                 var exclusionPositions = slot.getOutOfPage();
                 var exclusionAdvertiserIdsLogic = slot.getResponseInformation() && slot.getResponseInformation().advertiserId;
@@ -31,12 +31,26 @@ function tmgLoadAdentify() {
         var timestamp = new Date().toISOString();
         this.logMessages.push(timestamp + ': ' + message);
     };
-
+    
     window.top.adentify.logs = function() {
         return this.logMessages;
     };
 
-
+    window.top.adentify.log('ADENTIFY.JS: Config: rules START');
+    Object.entries(window.top.adentify.config).forEach(([key, value]) => {
+        if (typeof value === 'object' && !Array.isArray(value)) {
+            // For properties under button
+            Object.entries(value).forEach(([subKey, subValue]) => {
+                if (Array.isArray(subValue)) {
+                    // Just show the array for advertiserIds
+                    window.top.adentify.log(`ADENTIFY.JS: Config:${key}.${subKey}: [${subValue.join(", ")}]`);
+                }
+            });
+        } else if (typeof value === 'boolean') {
+            window.top.adentify.log(`ADENTIFY.JS: Config:${key}: ${value}`);
+        }
+    });
+    window.top.adentify.log('ADENTIFY.JS: Config: rules END');
 
     window.top.adentify.log('ADENTIFY.JS: Advert Feedback System Injected');
     window.top.googletag.cmd.push(function() {
@@ -175,6 +189,7 @@ function tmgLoadAdentify() {
             setTimeout(function() {
                 if (!window.top.document.getElementById(div).querySelector('#report-button')) {
                     //console.info('ADTECH: report button doesnt exist for this div, injecting...');
+                    window.top.adentify.log('adentifyDynamicAds: button eligible, adding to div: '+div);
                     appendContainer = document.createElement('div');
                     appendContainer.classList.add('report-button-class')
                     appendContainer.id = 'report-button';
@@ -325,6 +340,7 @@ function tmgLoadAdentify() {
         // hide the modal
         window.top.adentify.adentifyCloseModal = function() {
             window.top.document.getElementsByClassName('adentifyModalDialog')[0].style.display = 'none';
+            window.top.adentify.log('adentifyCloseModal: hiding modal');
         }
 
 
@@ -358,42 +374,52 @@ function tmgLoadAdentify() {
         window.top.adentify.injectButtonsToAlreadyLoadedAds = function() {
             // Only run the function if it hasn't been run before
             if (!window.top.adentify.injectButtonsToAlreadyLoadedAdsRan) {
-                window.top.adentify.log('ADENTIFY.JS: Adding button to slots loaded prior to adentify loading..')
+                window.top.adentify.log('ADENTIFY.JS: Adding button to slots loaded prior to adentify loading..');
                 var slots = window.top.googletag.pubads().getSlots();
+                var injectedSlots = [];  // Initialize the array to keep track of slot IDs
+        
                 slots.forEach(function(slot) {
                     var slotId = slot.getSlotElementId();
                     var slotElement = window.top.document.getElementById(slotId);
-
+        
                     // get the latest prebid info for window.top.adentify.getPrebidInfo. Only do this if the prebid module is enabled
                     if (window.top.adentify.config.enablePrebidModule && typeof window.top.pbjs !== "undefined") {
                         window.top.adentify.getPrebidInfo()
                     }
-
+        
                     if (window.top.adentify.config.enableAmazonModule && typeof window.top.apstag !== "undefined") {
                         window.top.adentify.getAmazonInfo()
                     }
-
+        
                     // get the latest GAM info for window.top.adentify.results
                     getAllAdsData();
-
+        
                     // Check if the slot has been rendered and doesn't have the 'button-added' class
                     if (slot.getResponseInformation() && !slotElement.querySelector('#report-button')) {
                         // Only add the button if the exclusions rules are not met
                         if (!window.top.adentify.config.button.exclusionRules(slot)) {
                             // Inject the button
                             window.top.adentify.adentifyDynamicAds(slotId);
-                            window.top.adentify.log('injectButtonsToAlreadyLoadedAds: Adding button to slot '+slotId);
+                            injectedSlots.push(slotId);  // Add the slot ID to the array
                         }
                     }
                 });
-
+        
+                // If no slots were processed, log a message
+                if (injectedSlots.length === 0) {
+                    window.top.adentify.log('injectButtonsToAlreadyLoadedAds No slots found that loaded prior to script running.');
+                } else {
+                    window.top.adentify.log('injectButtonsToAlreadyLoadedAds: Buttons injected to the following slots: ' + injectedSlots.join(', '));
+                }
+        
                 // Update the flag to indicate that the function has been run
                 window.top.adentify.injectButtonsToAlreadyLoadedAdsRan = true;
             }
         };
-
+        
         // Invoke the function at the end of the script or at any other appropriate point
         window.top.adentify.injectButtonsToAlreadyLoadedAds();
+        
 
 
 
@@ -477,7 +503,7 @@ function tmgLoadAdentify() {
         function adFeedbackForm() {
             getAllAdsData();
             createAdentifyModal();
-            //console.info('ADTECH adentify.js: The div clicked on had ID: ' + this.parentNode.id);
+            window.top.adentify.log('adFeedbackForm: The div clicked on had ID: ' + this.parentNode.id);
 
             let latestFormData = null; // store the latest form data
             window.top.adentify.buttonInteraction = {} // namespace to work in for button interaction
@@ -524,7 +550,7 @@ function tmgLoadAdentify() {
                         QueryIdURL: 'https://admanager.google.com/' + window.top.googletag.pubads().getSlots()[0].getAdUnitPath().match(/\/?(.*?)\//)[1] + '#troubleshooting/screenshot/query_id=' + window.top.adentify.buttonInteraction.queryId
                     };
 
-                    window.top.adentify.log("Submitting data:", data);
+                    window.top.adentify.log("Submitting data:\n" + JSON.stringify(data, null, 2));
 
                     // Store the latest form data
                     latestFormData = data;
@@ -539,6 +565,7 @@ function tmgLoadAdentify() {
 
                     //close the modal now
                     window.top.adentify.adentifyCloseModal();
+                    window.top.adentify.log('submitForm: hiding modal due to form submission');
 
                 };
 
@@ -559,8 +586,6 @@ function tmgLoadAdentify() {
                 if (!latestFormData) {
                     return;
                 }
-
-                window.top.adentify.log("Sending feedback:", latestFormData);
 
                 const adentifyResults = JSON.stringify(window.top.adentify.results.slots[window.top.adentify.buttonInteraction.clickedDiv][window.top.adentify.buttonInteraction.queryId], null, 4);
                 const adentifyMaxLength = 4000; // maximum length of a message attachment field in Slack
@@ -645,6 +670,7 @@ function tmgLoadAdentify() {
 
                         })
                         .catch(error => console.info("Error:", error));
+                        window.top.adentify.log('latestFormData: ERROR: '+JSON.stringify(error, null, 2));
                 } else {
                     //console.info("Please fill in all fields");
                 }
