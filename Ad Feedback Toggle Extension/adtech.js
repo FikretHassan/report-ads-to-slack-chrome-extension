@@ -1,8 +1,8 @@
 function tmgLoadAdentify() {
     window.top.adentify = window.top.adentify || {};
     window.top.adentify.about = { // details about this version of the code
-        version: '0.17',
-        date: '27-07-2023',
+        version: '0.18',
+        date: '02-08-2023',
         company: 'Telegraph Media Group',
         author: 'Fikret Hassan - fikret@telegraph.co.uk & Sean Dillon - sean@telegraph.co.uk',
         credit: 'Sean Dillon: https://github.com/adentify/, getAdData.js gist by rdillmanCN: https://gist.github.com/rdillmanCN/'
@@ -24,17 +24,22 @@ function tmgLoadAdentify() {
         }
     };
 
+    // Object to store our useful functions
+    window.top.adentify.functions = adentify.functions || {};
+
     // Initialize the logs array
-    window.top.adentify.logMessages = [];
+    window.top.adentify.logs = [];
 
     window.top.adentify.log = function(message) {
         var timestamp = new Date().toISOString();
-        this.logMessages.push(timestamp + ': ' + message);
+        this.logs.push(timestamp + ': ' + message);
     };
     
+    /*
     window.top.adentify.logs = function() {
         return this.logMessages;
     };
+    */
 
     window.top.adentify.log('ADENTIFY.JS: Config: rules START');
     Object.entries(window.top.adentify.config).forEach(([key, value]) => {
@@ -183,6 +188,24 @@ function tmgLoadAdentify() {
             window.top.adentify.getAmazonInfo = function() {};
             window.top.adentify.amazonData = {};
         }
+
+        // This function gets the advertiser id for a given slot
+        window.top.adentify.functions.getAdvertiserIdForSlot = function(div) {
+            // get the slot by its id
+            var slot = googletag.pubads().getSlots().find(function(s) {
+                return s.getSlotElementId() === div;
+            });
+
+            if (slot) {
+                // get response information
+                var responseInfo = slot.getResponseInformation();
+                if (responseInfo) {
+                    // return advertiser id
+                    return responseInfo.advertiserId;
+                }
+            }
+            return null; // return null if no advertiser id found
+        };
 
         // this inserts into the advert divs
         window.top.adentify.adentifyDynamicAds = function(div) {
