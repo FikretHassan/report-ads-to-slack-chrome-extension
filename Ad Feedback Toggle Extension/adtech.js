@@ -192,7 +192,7 @@ function tmgLoadAdentify() {
         // This function gets the advertiser id for a given slot
         window.top.adentify.functions.getAdvertiserIdForSlot = function(div) {
             // get the slot by its id
-            var slot = googletag.pubads().getSlots().find(function(s) {
+            var slot = window.top.googletag.pubads().getSlots().find(function(s) {
                 return s.getSlotElementId() === div;
             });
 
