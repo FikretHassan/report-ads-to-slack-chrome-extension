@@ -722,7 +722,8 @@ function tmgLoadAdentify() {
                 attempts++;
                 setTimeout(checkAdentify, 250);
             } else {
-                adentify.log("ADENTIFY: Maximum attempts to inject Ads Feedback script reached. Googletag is not ready.");
+                // adentify wont exist at this point, use console instead
+                console.info("ADENTIFY: Maximum attempts to inject Ads Feedback script reached. Googletag is not ready.");
             }
         }
 
