@@ -25,7 +25,7 @@ function tmgLoadAdentify() {
     };
 
     // Object to store our useful functions
-    window.top.adentify.functions = adentify.functions || {};
+    window.top.adentify.functions = window.top.adentify.functions || {};
 
     // Initialize the logs array
     window.top.adentify.logs = [];
