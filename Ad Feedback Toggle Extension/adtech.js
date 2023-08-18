@@ -1,8 +1,8 @@
 function tmgLoadAdentify() {
     window.top.adentify = window.top.adentify || {};
     window.top.adentify.about = { // details about this version of the code
-        version: '0.18',
-        date: '02-08-2023',
+        version: '0.19',
+        date: '18-08-2023',
         company: 'Telegraph Media Group',
         author: 'Fikret Hassan - fikret@telegraph.co.uk & Sean Dillon - sean@telegraph.co.uk',
         credit: 'Sean Dillon: https://github.com/adentify/, getAdData.js gist by rdillmanCN: https://gist.github.com/rdillmanCN/'
@@ -14,6 +14,7 @@ function tmgLoadAdentify() {
         enableCcpaModule: true,
         enablePrebidModule: true,
         enableAmazonModule: true,
+        enableAdHTMLModule: false,
         button: {
             exclusionAdvertiserIds: ['14636214','test','test2'],
             exclusionRules: function(slot) {
@@ -444,7 +445,35 @@ function tmgLoadAdentify() {
         window.top.adentify.injectButtonsToAlreadyLoadedAds();
         
 
-
+        function getAdHTML(elementId) {
+            // Check if the Ad HTML module is enabled
+            if (!window.top.adentify.config.enableAdHTMLModule) {
+                return "Ad HTML module is disabled";
+            }
+        
+            var slotElement = window.top.document.getElementById(elementId);
+            if (!slotElement) return "";
+        
+            var iframe = slotElement.querySelector('iframe');
+            if (!iframe) return "";
+        
+            // Check for safeframe.googlesyndication.com in the iframe's src
+            if (iframe.src && iframe.src.includes("safeframe.googlesyndication.com")) {
+                return "Safeframe detected - content not accessible";
+            }
+        
+            try {
+                if (iframe.contentWindow && iframe.contentWindow.document) {
+                    return iframe.contentWindow.document.documentElement.innerHTML;
+                }
+            } catch (e) {
+                // Handle cross-domain access errors gracefully
+                return "Cross-domain restriction - content not accessible";
+            }
+        
+            return "";
+        }        
+        
 
         // slightly modified version of rdillmanCN's gist to collect all page and slot level data for us.
         // rewritten to store refreshed ads under an element ID, eg adentify.results.slots.elementID.queryId for multiple entries
@@ -476,6 +505,7 @@ function tmgLoadAdentify() {
             result.sourceAgnosticCreativeId = data && data.sourceAgnosticCreativeId || "";
             result.sourceAgnosticLineItemId = data && data.sourceAgnosticLineItemId || "";
             result.DFP = data && data.creativeId && "https://www.google.com/dfp/" + window.top.googletag.pubads().getSlots()[0].getAdUnitPath().match(/\/?(.*?)\//)[1] + "#delivery/CreativeDetail/creativeId=" + data.creativeId || "";
+            result.adHTML = getAdHTML(slot.getSlotElementId());
             // added a regexp to grab the GAM account ID better. Before we were expecting the format to be /GAM-ID/, but notice some sites use GAM-ID/ - this works on both
             // Get ad sizes for the slot
             slot.getSizes().forEach(function(size) {
@@ -610,7 +640,26 @@ function tmgLoadAdentify() {
                     return;
                 }
 
-                const adentifyResults = JSON.stringify(window.top.adentify.results.slots[window.top.adentify.buttonInteraction.clickedDiv][window.top.adentify.buttonInteraction.queryId], null, 4);
+                // Deep copy the data for the clicked div and its specific queryId
+                const clickedSlotData = JSON.parse(JSON.stringify(window.top.adentify.results.slots[window.top.adentify.buttonInteraction.clickedDiv][window.top.adentify.buttonInteraction.queryId]));
+
+                // Extract the adHTML for the clicked div and its specific queryId
+                let adHTML;
+
+                if (!window.top.adentify.config.enableAdHTMLModule) {
+                    adHTML = "Module not enabled";
+                } else {
+                    adHTML = window.top.adentify.results.slots[window.top.adentify.buttonInteraction.clickedDiv][window.top.adentify.buttonInteraction.queryId].adHTML || "No adHTML data available";
+                }
+
+                // Omit the adHTML property from the copied data
+                if (clickedSlotData && clickedSlotData.adHTML) {
+                    delete clickedSlotData.adHTML;
+                }
+
+                // Convert the modified data to a string
+                const adentifyResults = JSON.stringify(clickedSlotData, null, 4);
+
                 const adentifyMaxLength = 4000; // maximum length of a message attachment field in Slack
                 const adentifyChunks = []; // array to store the Adentify data chunks
 
@@ -629,6 +678,35 @@ function tmgLoadAdentify() {
                     };
                 }) : [];
 
+                const adHTMLMaxLength = 4000; // maximum length of a message attachment field in Slack
+                const adHTMLChunks = []; // array to store the adHTML data chunks
+                
+                // Split the adHTML data into chunks based on the maximum message size
+                for (let i = 0; i < adHTML.length; i += adHTMLMaxLength) {
+                    adHTMLChunks.push(adHTML.substring(i, i + adHTMLMaxLength));
+                }
+                
+                const adHTMLAttachment = adHTMLChunks.map((chunk, index) => {
+                    return {
+                        "fallback": `Ad HTML Data (${index + 1} of ${adHTMLChunks.length})`,
+                        "color": "#36a64f",
+                        "title": `Ad HTML Data (${index + 1} of ${adHTMLChunks.length})`,
+                        "text": "```\n" + chunk + "\n```"
+                    };
+                });
+                
+                /*
+                if (adHTML === "Module not enabled" || adHTML === "No adHTML data available") {
+                    adHTMLAttachment.push({
+                        "fallback": "Ad HTML Status",
+                        "color": "#ff0000",  // Red color to indicate an issue or status
+                        "title": "Ad HTML Status",
+                        "text": adHTML
+                    });
+                }
+                */
+                
+                
                 // Send data to a Slack webhook for the latest form data
                 const endpointUrl = "<SLACK WEBHOOK URL HERE>";
                 const message = {
@@ -657,6 +735,7 @@ function tmgLoadAdentify() {
                             ]
                         },
                         ...adentifyAttachment,
+                        ...adHTMLAttachment,
                         {
                             "color": "#36a64f",
                             "fields": [{
