@@ -13,7 +13,7 @@ function tmgLoadAdentify() {
         enableGdprModule: true,
         enableCcpaModule: true,
         enablePrebidModule: true,
-        enableAmazonModule: true,
+        enableAmazonModule: false,
         enableAdHTMLModule: false,
         button: {
             exclusionAdvertiserIds: ['14636214','test','test2'],
@@ -145,49 +145,9 @@ function tmgLoadAdentify() {
             window.top.adentify.pbjsData = {};
         }
 
-        // Amazon / APS module - I do not work with aps so this is experimental and may not work as intended whilst I test its functionality
-        if (window.top.adentify.config.enableAmazonModule && typeof window.top.apstag !== "undefined") {
-            window.top.adentify.getAmazonInfo = function() {
-                window.top.adentify.amazonData = window.top.adentify.amazonData || {};
+        // Amazon / APS module - Empty for now
+        if (window.top.adentify.config.enableAmazonModule) {
 
-                // Check if fetchBids function exists
-                if (typeof window.top.apstag.fetchBids === "function") {
-                    var slots = window.top.googletag.pubads().getSlots().map(function(slot) {
-                        return {
-                            slotID: slot.getSlotElementId(),
-                            slotName: slot.getAdUnitPath(),
-                            sizes: slot.getSizes(window.innerWidth, window.innerHeight).map(function(size) {
-                                if (size.getWidth && size.getHeight) {
-                                    return [size.getWidth(), size.getHeight()];
-                                } else {
-                                    return [size[0], size[1]];
-                                }
-                            })
-                        };
-                    });
-
-                    // Store the Amazon TAM / UAM targeting keys in the adentify object
-                    window.top.apstag.fetchBids({
-                        slots: slots
-                    }, function(bids) {
-                        window.top.adentify.amazonData.targetingKeys = bids.reduce(function(result, bid) {
-                            result[bid.slotID] = bid.targeting;
-                            return result;
-                        }, {});
-
-                        // Populate amazonData.slots with the slotIDs from the fetched bids
-                        window.top.adentify.amazonData.slots = bids.map(function(bid) {
-                            return bid.slotID;
-                        });
-                    });
-                } else {
-                    window.top.adentify.amazonData.slots = [];
-                    window.top.adentify.amazonData.targetingKeys = {};
-                }
-            };
-        } else {
-            window.top.adentify.getAmazonInfo = function() {};
-            window.top.adentify.amazonData = {};
         }
 
         // This function gets the advertiser id for a given slot
@@ -378,10 +338,6 @@ function tmgLoadAdentify() {
                     window.top.adentify.getPrebidInfo()
                 }
 
-                if (window.top.adentify.config.enableAmazonModule && typeof window.top.apstag !== "undefined") {
-                    window.top.adentify.getAmazonInfo()
-                }
-
                 // get the latest GAM info for window.top.adentify.results
                 getAllAdsData();
 
@@ -411,9 +367,6 @@ function tmgLoadAdentify() {
                         window.top.adentify.getPrebidInfo()
                     }
         
-                    if (window.top.adentify.config.enableAmazonModule && typeof window.top.apstag !== "undefined") {
-                        window.top.adentify.getAmazonInfo()
-                    }
         
                     // get the latest GAM info for window.top.adentify.results
                     getAllAdsData();
